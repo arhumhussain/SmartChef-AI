@@ -147,22 +147,22 @@ if data_loaded:
                 
                 # Daily total stats
                 st.markdown(f"""
-                <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; text-align: center;">
-                    <div style="flex: 1; background: rgba(255, 255, 255, 0.03); border-radius: 8px; padding: 0.8rem;">
+                <div class="stat-container" style="margin-bottom: 1.5rem; display: flex; gap: 1rem; text-align: center;">
+                    <div class="stat-box" style="padding: 0.8rem; background: #FFFFFF; border: 1px solid #E9ECEF; border-radius: 8px; flex: 1;">
                         <span style="font-size: 1.3rem; font-weight: 800; color: #ff7e5f;">{day_calories:.0f}</span><br>
-                        <span style="font-size: 0.75rem; color: #94a3b8;">Total kcal</span>
+                        <span style="font-size: 0.75rem; color: #636E72;">Total kcal</span>
                     </div>
-                    <div style="flex: 1; background: rgba(255, 255, 255, 0.03); border-radius: 8px; padding: 0.8rem;">
+                    <div class="stat-box" style="padding: 0.8rem; background: #FFFFFF; border: 1px solid #E9ECEF; border-radius: 8px; flex: 1;">
                         <span style="font-size: 1.3rem; font-weight: 800; color: #6366f1;">{day_protein:.1f}g</span><br>
-                        <span style="font-size: 0.75rem; color: #94a3b8;">Total Protein</span>
+                        <span style="font-size: 0.75rem; color: #636E72;">Total Protein</span>
                     </div>
-                    <div style="flex: 1; background: rgba(255, 255, 255, 0.03); border-radius: 8px; padding: 0.8rem;">
+                    <div class="stat-box" style="padding: 0.8rem; background: #FFFFFF; border: 1px solid #E9ECEF; border-radius: 8px; flex: 1;">
                         <span style="font-size: 1.3rem; font-weight: 800; color: #ec4899;">{day_fat:.1f}g</span><br>
-                        <span style="font-size: 0.75rem; color: #94a3b8;">Total Fat</span>
+                        <span style="font-size: 0.75rem; color: #636E72;">Total Fat</span>
                     </div>
-                    <div style="flex: 1; background: rgba(255, 255, 255, 0.03); border-radius: 8px; padding: 0.8rem;">
+                    <div class="stat-box" style="padding: 0.8rem; background: #FFFFFF; border: 1px solid #E9ECEF; border-radius: 8px; flex: 1;">
                         <span style="font-size: 1.3rem; font-weight: 800; color: #eab308;">{day_carbs:.1f}g</span><br>
-                        <span style="font-size: 0.75rem; color: #94a3b8;">Total Carbs</span>
+                        <span style="font-size: 0.75rem; color: #636E72;">Total Carbs</span>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -182,8 +182,8 @@ if data_loaded:
                     with col_meal:
                         st.markdown(f"""
                         <div class="glass-card" style="padding: 1.2rem; margin-bottom: 0.8rem;">
-                            <h4 style="margin: 0; font-size: 1.15rem; color: #a5b4fc;">{slot} - {meal['recipe_name']}</h4>
-                            <p style="font-size: 0.85rem; color: #94a3b8; margin: 0.4rem 0 0 0;">
+                            <h4 style="margin: 0; font-size: 1.15rem; color: #FF6B35;">{slot} - {meal['recipe_name']}</h4>
+                            <p style="font-size: 0.85rem; color: #2D3436; margin: 0.4rem 0 0 0;">
                                 Cuisine: {meal['cuisine']} | Difficulty: {meal['difficulty']} | Time: {meal['total_time_minutes']} mins | Cost: ${meal['estimated_cost_usd']:.2f} USD | Calories: {meal['calories']:.0f} kcal
                             </p>
                         </div>

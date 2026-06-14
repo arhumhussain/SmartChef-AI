@@ -1,5 +1,5 @@
 import os
-import google.generativeai as genai
+import requests
 from dotenv import load_dotenv
 from src.chatbot.prompts import CHEF_SYSTEM_PROMPT, format_rag_prompt
 from src.chatbot.rag import retrieve_recipes_for_query
@@ -21,15 +21,16 @@ def get_gemini_api_key():
     return key
 
 
-def generate_chef_response(user_query, api_key, master_df, ing_df, nut_df, steps_df):
+def generate_chef_response(user_query, api_key, master_df, ing_df, nut_df, steps_df, provider=None):
     """
-    Generates a culinary response using Gemini API with RAG context, 
+    Generates a culinary response using Gemini or Groq API with RAG context, 
     or falls back to a simulated chef response if no key is provided.
     
     Args:
         user_query (str): The user's message/question.
-        api_key (str): The Gemini API key (can be None or empty).
+        api_key (str): The API key (can be None or empty).
         master_df, ing_df, nut_df, steps_df: DataFrames for RAG retrieval.
+        provider (str): The provider name ("Groq" or "Gemini"). Autodetected if None.
         
     Returns:
         tuple: (response_text, is_simulated)
@@ -40,32 +41,121 @@ def generate_chef_response(user_query, api_key, master_df, ing_df, nut_df, steps
     # 2. Format the prompt with context
     prompt = format_rag_prompt(user_query, context_recipes)
     
-    # 3. Check for API key
-    if not api_key:
-        api_key = get_gemini_api_key()
-        
-    if not api_key:
+    # 3. Determine provider and key
+    active_key = api_key
+    active_provider = provider
+    
+    # Simple check to load streamlit if needed inside helper
+    def get_st_secret(name):
+        try:
+            import streamlit as st
+            return st.secrets.get(name)
+        except:
+            return None
+
+    if not active_provider:
+        groq_env_key = os.getenv("GROQ_API_KEY") or get_st_secret("GROQ_API_KEY")
+        if (api_key and api_key.startswith("gsk_")) or (not api_key and groq_env_key):
+            active_provider = "Groq"
+            if not active_key:
+                active_key = groq_env_key
+        else:
+            active_provider = "Gemini"
+            if not active_key:
+                active_key = os.getenv("GEMINI_API_KEY") or get_st_secret("GEMINI_API_KEY") or get_gemini_api_key()
+    else:
+        if not active_key:
+            if active_provider == "Groq":
+                active_key = os.getenv("GROQ_API_KEY") or get_st_secret("GROQ_API_KEY")
+            else:
+                active_key = os.getenv("GEMINI_API_KEY") or get_st_secret("GEMINI_API_KEY") or get_gemini_api_key()
+
+    if not active_key:
         # Fallback to Simulated Mode
         return generate_simulated_chef_response(user_query, context_recipes), True
-        
-    try:
-        # Configure Gemini
-        genai.configure(api_key=api_key)
-        
-        # Initialize Gemini 1.5 Flash (or 2.5 Flash if available, let's use 1.5 Flash as standard safe choice)
-        model = genai.GenerativeModel(
-            model_name='gemini-1.5-flash',
-            system_instruction=CHEF_SYSTEM_PROMPT
-        )
-        
-        response = model.generate_content(prompt)
-        return response.text, False
-        
-    except Exception as e:
-        # Handle errors gracefully by falling back to simulation
-        error_msg = f"*(API Connection Error: {str(e)})*\n\n"
-        sim_response = generate_simulated_chef_response(user_query, context_recipes)
-        return error_msg + sim_response, True
+
+    if active_provider == "Groq":
+        try:
+            # Construct direct REST API endpoint for Groq Chat Completions
+            url = "https://api.groq.com/openai/v1/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {active_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "model": "llama-3.3-70b-versatile",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": CHEF_SYSTEM_PROMPT
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                "temperature": 0.7
+            }
+            response = requests.post(url, headers=headers, json=payload, timeout=30)
+            response.raise_for_status()
+            response_json = response.json()
+            response_text = response_json['choices'][0]['message']['content']
+            return response_text, False
+        except requests.exceptions.HTTPError as e:
+            # Extract detailed error message from response body
+            error_details = ""
+            if e.response is not None:
+                try:
+                    error_json = e.response.json()
+                    error_details = error_json.get("error", {}).get("message", e.response.text)
+                except:
+                    error_details = e.response.text
+            error_msg = f"*(Groq API Error: {error_details if error_details else str(e)})*\n\n"
+            sim_response = generate_simulated_chef_response(user_query, context_recipes)
+            return error_msg + sim_response, True
+        except Exception as e:
+            # Handle other errors gracefully by falling back to simulation
+            error_msg = f"*(Groq API Connection Error: {str(e)})*\n\n"
+            sim_response = generate_simulated_chef_response(user_query, context_recipes)
+            return error_msg + sim_response, True
+    else:
+        # Gemini logic
+        try:
+            # Construct direct REST API endpoint for Gemini 1.5 Flash
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={active_key}"
+            headers = {"Content-Type": "application/json"}
+            
+            # Build payload matching the Gemini API schema
+            payload = {
+                "contents": [
+                    {
+                        "role": "user",
+                        "parts": [{"text": prompt}]
+                    }
+                ],
+                "systemInstruction": {
+                    "parts": [{"text": CHEF_SYSTEM_PROMPT}]
+                }
+            }
+            
+            # Make standard HTTP POST request (pure Python, bypasses gRPC)
+            response = requests.post(url, headers=headers, json=payload, timeout=30)
+            response.raise_for_status()
+            response_json = response.json()
+            
+            # Parse output
+            try:
+                response_text = response_json['candidates'][0]['content']['parts'][0]['text']
+                return response_text, False
+            except (KeyError, IndexError):
+                raise Exception("Failed to parse response structure from Gemini API.")
+            
+        except Exception as e:
+            # Handle errors gracefully by falling back to simulation
+            error_msg = f"*(Gemini API Connection Error: {str(e)})*\n\n"
+            sim_response = generate_simulated_chef_response(user_query, context_recipes)
+            return error_msg + sim_response, True
+
 
 
 def generate_simulated_chef_response(query, context_recipes):

@@ -1,4 +1,5 @@
 import streamlit as st
+import os
 from src.data.loader import load_all_data
 from src.chatbot.chef_bot import generate_chef_response
 from src.utils.styles import inject_premium_css
@@ -25,15 +26,21 @@ if data_loaded:
     st.markdown("<h1 style='margin-bottom: 0px;'>💬 AI Chef</h1>", unsafe_allow_html=True)
     st.markdown("<p style='color: #64748b; font-size: 1.1rem;'>Consult your personal AI Chef for recipe adaptations, ingredient substitutions, and culinary advice.</p>", unsafe_allow_html=True)
 
-    # Fetch Gemini API key from main app page selection (session state)
-    api_key = st.session_state.get("gemini_api_key", "")
+    # Fetch API keys from session state or environment variables
+    groq_key = st.session_state.get("groq_api_key", os.getenv("GROQ_API_KEY", ""))
+    gemini_key = st.session_state.get("gemini_api_key", os.getenv("GEMINI_API_KEY", ""))
+    
+    active_key = groq_key if groq_key else gemini_key
+    active_provider = "Groq" if groq_key else ("Gemini" if gemini_key else None)
     
     # Mode badge
-    if api_key:
+    if active_provider == "Groq":
+        st.markdown("<span class=\"badge badge-score\">LIVE MODE (Groq API Active)</span>", unsafe_allow_html=True)
+    elif active_provider == "Gemini":
         st.markdown("<span class=\"badge badge-score\">LIVE MODE (Gemini API Active)</span>", unsafe_allow_html=True)
     else:
         st.markdown("<span class=\"badge badge-difficulty\">SIMULATION MODE (No API Key)</span>", unsafe_allow_html=True)
-        st.caption("To activate live AI responses, enter your Gemini API key in the 'Advanced Settings' expander on the main dashboard home page.")
+        st.caption("To activate live AI responses, enter your Groq or Gemini API key in the .env file or home page settings.")
 
     # Initialize chat history
     if "chat_history" not in st.session_state:
@@ -82,11 +89,12 @@ if data_loaded:
         with st.spinner("Chef is brainstorming..."):
             response_text, is_simulated = generate_chef_response(
                 user_query=user_query,
-                api_key=api_key,
+                api_key=active_key,
                 master_df=master_df,
                 ing_df=ing_df,
                 nut_df=nut_df,
-                steps_df=steps_df
+                steps_df=steps_df,
+                provider=active_provider
             )
             
             # Display assistant message

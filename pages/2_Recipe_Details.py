@@ -27,7 +27,8 @@ if data_loaded:
     st.markdown("<p style='color: #64748b; font-size: 1.1rem;'>Inspect nutritional facts, ingredients, and step-by-step cooking timelines.</p>", unsafe_allow_html=True)
 
     # 1. Select Recipe
-    # Check if a recipe_id was set from the search results
+    # Check if a recipe was set from the search results (name or id)
+    saved_recipe_name = st.session_state.get('selected_recipe_name')
     saved_recipe_id = st.session_state.get('selected_recipe_id')
     
     # Generate list of dropdown items mapping 'Recipe Name (Cuisine)' -> recipe_id
@@ -38,7 +39,9 @@ if data_loaded:
     for idx, row in enumerate(recipe_options.itertuples()):
         label = f"{row.recipe_name} ({row.cuisine}) - {row.recipe_id}"
         options_dict[label] = row.recipe_id
-        if saved_recipe_id and row.recipe_id == saved_recipe_id:
+        if saved_recipe_name and row.recipe_name == saved_recipe_name:
+            default_idx = idx
+        elif saved_recipe_id and row.recipe_id == saved_recipe_id:
             default_idx = idx
 
     selected_label = st.selectbox(
@@ -68,7 +71,7 @@ if data_loaded:
             st.markdown(f"""
             <div class="glass-card">
                 <h4>General Information</h4>
-                <p style="font-size: 0.95rem; color: #cbd5e1; line-height: 1.6;">
+                <p style="font-size: 0.95rem; color: #2D3436; line-height: 1.6;">
                     <b>Cuisine:</b> {meta['cuisine']} <br>
                     <b>Category:</b> {meta['category']} <br>
                     <b>Cooking Method:</b> {meta['cooking_method']} <br>
@@ -113,7 +116,7 @@ if data_loaded:
             fig.update_layout(
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)',
-                font=dict(color='#e2e8f0', family='Outfit'),
+                font=dict(color='#2D3436', family='Outfit'),
                 showlegend=False,
                 margin=dict(t=10, b=10, l=10, r=10),
                 height=250
@@ -126,19 +129,19 @@ if data_loaded:
             <div style="display: flex; justify-content: space-between; text-align: center; margin-bottom: 1.5rem;">
                 <div style="flex: 1;">
                     <span style="font-size: 1.5rem; font-weight: 800; color: #ff7e5f;">{nutrition.get('calories', 0)}</span><br>
-                    <span style="font-size: 0.8rem; color: #94a3b8;">Calories</span>
+                    <span style="font-size: 0.8rem; color: #636E72;">Calories</span>
                 </div>
                 <div style="flex: 1;">
                     <span style="font-size: 1.5rem; font-weight: 800; color: #6366f1;">{nutrition.get('protein_g', 0)}g</span><br>
-                    <span style="font-size: 0.8rem; color: #94a3b8;">Protein</span>
+                    <span style="font-size: 0.8rem; color: #636E72;">Protein</span>
                 </div>
                 <div style="flex: 1;">
                     <span style="font-size: 1.5rem; font-weight: 800; color: #ec4899;">{nutrition.get('fat_g', 0)}g</span><br>
-                    <span style="font-size: 0.8rem; color: #94a3b8;">Fat</span>
+                    <span style="font-size: 0.8rem; color: #636E72;">Fat</span>
                 </div>
                 <div style="flex: 1;">
                     <span style="font-size: 1.5rem; font-weight: 800; color: #eab308;">{nutrition.get('carbohydrates_g', 0)}g</span><br>
-                    <span style="font-size: 0.8rem; color: #94a3b8;">Carbs</span>
+                    <span style="font-size: 0.8rem; color: #636E72;">Carbs</span>
                 </div>
             </div>
             """, unsafe_allow_html=True)

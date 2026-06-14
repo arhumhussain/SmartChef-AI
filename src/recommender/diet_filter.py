@@ -2,19 +2,19 @@ import pandas as pd
 
 def get_dietary_allowed_recipe_ids(nut_df, goal):
     """
-    Filters recipe_ids based on a selected dietary goal using percentile-based thresholds.
+    Filters recipe names based on a selected dietary goal using percentile-based thresholds.
     
     Args:
         nut_df (pd.DataFrame): The nutrition dataframe with columns: 
-                               ['recipe_id', 'calories', 'protein_g', 'carbohydrates_g', 'fat_g']
+                               ['recipe_name', 'calories', 'protein_g', 'carbohydrates_g', 'fat_g']
         goal (str): Selected dietary goal. One of: 
                     'Weight Loss', 'Muscle Gain', 'High Protein', 'Low Fat', 'Low Carb', 'Normal'
                     
     Returns:
-        set: A set of recipe_ids that satisfy the dietary constraints.
+        set: A set of recipe_names that satisfy the dietary constraints.
     """
     if not goal or goal == 'Normal':
-        return set(nut_df['recipe_id'].tolist())
+        return set(nut_df['recipe_name'].tolist())
         
     # Calculate dynamic thresholds using percentiles
     if goal == 'Weight Loss':
@@ -36,6 +36,6 @@ def get_dietary_allowed_recipe_ids(nut_df, goal):
         
     else:
         # Fallback if unknown goal
-        return set(nut_df['recipe_id'].tolist())
+        return set(nut_df['recipe_name'].tolist())
         
-    return set(filtered_df['recipe_id'].tolist())
+    return set(filtered_df['recipe_name'].tolist())
